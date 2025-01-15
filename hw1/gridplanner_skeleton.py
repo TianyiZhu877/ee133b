@@ -69,7 +69,8 @@ class Node:
         # FIXME: You may want to add further information as needed here.
         self.parent = None      # No parent
         self.cost   = inf       # Unable to reach = infinite cost
-        self.distance = inf
+        self.g = inf
+        self.h = None
 
         # State of the node during the search algorithm.
         self.seen = False
@@ -103,18 +104,19 @@ class Node:
 #   but not done) to trunk (done).
 #
 # Run the planner.
-def planner(start, goal, show = None):
+def planner(start, goal, show = None, a_star_coeff = 0):
     # Use the start node to initialize the on-deck queue: it has no
     # parent (being the start), zero cost to reach, and has been seen.
     start.seen   = True
-    start.cost   = 0
+    start.g = 0
+    start.h = a_star_coeff * goal.distance(start)
+    start.cost  = start.g + start.h
     start.parent = None
-    
     onDeck = [start]
 
     # Continually expand/build the search tree.
     print("Starting the processing...")
-    while True:
+    while len(onDeck) > 0:
         # Show the grid.
         if show:
             show()
@@ -154,19 +156,22 @@ def planner(start, goal, show = None):
 
 
             for neighbor in current.neighbors:
-                neighbor.seen = True
+                if not neighbor.seen:
+                    neighbor.seen = True
+                    neighbor.h = a_star_coeff * goal.distance(neighbor)
                 
-                neighbor_newcost = current.cost + 1
+                neighbor_new_g = current.g + 1
 
-                if neighbor.cost > neighbor_newcost:
+                if neighbor.g > neighbor_new_g:
                     neighbor.parent = current
-                    neighbor.cost = neighbor_newcost
+                    neighbor.g = neighbor_new_g
+                    neighbor.cost = neighbor.h + neighbor_new_g
                     bisect.insort(onDeck, neighbor)
 
         
         ####################
 
-    return path
+    return None
 
 
 ######################################################################
@@ -224,8 +229,13 @@ if __name__== "__main__":
         visual.show(wait)
 
     # Run.
-    path = planner(start, goal, show)
-    print(path)
+    # djikstra for P1:
+    # path = planner(start, goal, show)
+
+    # A* for P2-3:
+    path = planner(start, goal, show, 1)
+
+    # print(path)
 
 
     #######################  REPORT  #######################
@@ -242,6 +252,7 @@ if __name__== "__main__":
     if not path:
         print("UNABLE TO FIND A PATH")
     else:
+        print("Solution path length ", len(path))
         print("Marking the path")
         for node in path:
             visual.color(node.row, node.col, RED)
