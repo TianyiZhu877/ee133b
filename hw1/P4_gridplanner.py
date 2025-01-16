@@ -79,7 +79,7 @@ class Node:
 
     # Define the Manhattan distance to another node.
     def distance(self, other):
-        return abs(self.row - other.row) + abs(self.col - other.col)
+        return max(abs(self.row - other.row), abs(self.col - other.col))
 
     # Define the "less-than" to enable sorting by cost.
     def __lt__(self, other):
@@ -158,8 +158,14 @@ def planner(start, goal, show = None, a_star_coeff = 0):
             for neighbor in current.neighbors:
                 if not neighbor.seen:
                     neighbor.seen = True
+# Modification for Aggressive A∗: multiply by the coefficient when calculating estimated 
+# cost to-go for a node
                     neighbor.h = a_star_coeff * goal.distance(neighbor)
-                
+
+# Modification in A* algorithm: record node.g, which stands for cost from start to the node
+# and node.h, which is the estimated cost to go. Then the cost (c_path) = node.h + node.g. 
+# Insert the node again to onDeck whenever we find a smaller cost from start to it (node.g),
+# and same as dijkstra, still keep the order of onDeck by the cost
                 neighbor_new_g = current.g + 1
 
                 if neighbor.g > neighbor_new_g:
@@ -167,7 +173,6 @@ def planner(start, goal, show = None, a_star_coeff = 0):
                     neighbor.g = neighbor_new_g
                     neighbor.cost = neighbor.h + neighbor_new_g
                     bisect.insort(onDeck, neighbor)
-
         
         ####################
 
@@ -200,7 +205,7 @@ if __name__== "__main__":
 
     # Create the neighbors, being the edges between the nodes.
     for node in nodes:
-        for (dr, dc) in [(-1,0), (1,0), (0,-1), (0,1)]:
+        for (dr, dc) in [(-1,0), (1,0), (0,-1), (0,1), (1,1), (-1,-1), (1,-1), (-1,1)]:
             # Find the "other" connected node.  This list can have one
             # or zero elements (if the other node exits or not).
             others = [n for n in nodes
