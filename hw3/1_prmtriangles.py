@@ -25,10 +25,13 @@ from astar import AStarNode, astar
 #
 #   FIXME: Define the N/K...
 #
-N = FIXME: Select the number of nodes
-K = FIXME: Select the number of nearest neighbors
+# N = 20 #FIXME: Select the number of nodes
+# K = 10 # FIXME: Select the number of nearest neighbors
 
+N = 10 #FIXME: Select the number of nodes
+K = 5 # FIXME: Select the number of nearest neighbors
 
+random.seed(0)
 ######################################################################
 #
 #   World Definitions
@@ -155,13 +158,22 @@ class Node(AStarNode):
 #
 # Create the list of nodes.
 def createNodes(N):
+    # FIXME: create the list of valid nodes sampling uniformly in x and y.
     # Add nodes sampled uniformly across the space.
     nodes = []
     sampled = 0
-    while valid < N:
+    while len(nodes) < N:
         sampled += 1
-        new_node = Node(np.uniform())
-    # FIXME: create the list of valid nodes sampling uniformly in x and y.
+        if (sampled > N*10):
+            print(f"Warning: to many points sampled lies on obstacles, ditched with {len(nodes)} nodes")
+            return nodes
+        
+        new_node = Node(random.uniform(xmin, xmax), random.uniform(ymin, ymax))
+        if new_node.inFreespace():
+            nodes.append(new_node)
+    
+    return nodes
+            
 
 # Connect the nearest neighbors
 def connectNearestNeighbors(nodes, K):
@@ -186,6 +198,25 @@ def connectNearestNeighbors(nodes, K):
 # Post Process the Path
 def PostProcess(path):
     # FIXME: Remove nodes in the path than can be skipped without collisions
+    n = len(path)
+    if n == 0:
+        return []
+    # if n == 1:
+    
+    new_path = [path[0]]
+
+    current_ptr = 0
+    while current_ptr<(n-1):
+        current = path[current_ptr]
+        next_ptr = current_ptr+1
+        while (next_ptr < n-1) and (current.connectsTo(path[next_ptr+1])):
+            next_ptr += 1
+        new_path.append(path[next_ptr])
+        current_ptr = next_ptr
+    
+    return new_path
+        
+        
 
 
 
@@ -264,7 +295,7 @@ def main():
 
 
     # Post Process the path.
-    PostProcess(path)
+    path = PostProcess(path)
 
     # Show the post-processed path.
     visual.drawPath(path, color='b', linewidth=2)
