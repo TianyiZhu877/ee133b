@@ -26,14 +26,14 @@ from vandercorput       import vandercorput
 #
 #   FIXME: Define the N/K...
 #
-N = 800 # FIXME: Select the number of nodes
-K = 30 # FIXME: Select the number of nearest neighbors
+N = 700     # FIXME: Select the number of nodes
+K = 20      # FIXME: Select the number of nearest neighbors
 
 # FIXME: Include the bonus wall for part (c)
 BONUSWALL = False
+MAX_TRAIL_COEFF = 10
 
-
-random.seed(4)
+random.seed(20)
 ######################################################################
 #
 #   World Definitions
@@ -217,7 +217,7 @@ def createNodes(N):
     sampled = 0
     while len(nodes) < N:
         sampled += 1
-        if (sampled > N*10):
+        if (sampled > N * MAX_TRAIL_COEFF):
             print(f"Warning: to many points sampled lies on obstacles, ditched with {len(nodes)} nodes")
             return nodes
         
@@ -276,10 +276,8 @@ def PostProcess(path):
     n = len(path)
     if n == 0:
         return []
-    # if n == 1:
     
     new_path = [path[0]]
-
     current_ptr = 0
     while current_ptr<(n-1):
         current = path[current_ptr]
