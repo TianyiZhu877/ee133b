@@ -26,13 +26,13 @@ from vandercorput       import vandercorput
 #
 #   FIXME: Define the N/K...
 #
-N =  80       # FIXME: Select the number of nodes
+N =  100       # FIXME: Select the number of nodes
 K =  10       # FIXME: Select the number of nearest neighbors
 
 ENABLE_WRAP = False
 MAX_TRAIL_COEFF = 10
 
-random.seed(2)
+random.seed(0)
 ######################################################################
 #
 #   World Definitions
@@ -129,9 +129,21 @@ class Visualization:
             n = ceil(path[i].distance(path[i+1]) / Dqdraw)
             for j in range(n):
                 node = path[i].intermediate(path[i+1], j/n)
+                # print(node, node.enable_wrap)
                 self.drawRobot(node, *args, **kwargs)
                 plt.pause(0.1)
         self.drawRobot(path[-1], *args, **kwargs)
+
+def print_path(path):
+    
+    for i, node in enumerate(path):
+        print(node, end = ', ')
+        if i>0:
+            print("Connects to last node: ", node.connectsTo(path[i-1]), end = ', ')
+            print("Distance from last path: ", node.distance(path[i-1]))
+        else:
+            print()
+
 
 def limit_angle(angle):
     while angle>pi:
@@ -148,7 +160,7 @@ def intermediate_angle(source, target, alpha, allow_wrap:bool = False):
     source = wrap(source)
     target = wrap(target)
 
-    if (not allow_wrap) or (abs(source-target)<np.pi):
+    if (not allow_wrap) or (abs(source-target)<pi):
         return source + alpha*(target-source)
 
     if source < target:
@@ -172,6 +184,9 @@ class Node(AStarNode):
         # FIXME: Finish the initialization.
         # FIXME: Save any states/coordinates you need.
         
+        # self.q1 = wrap(q1)
+        # self.q2 = wrap(q2)
+        # self.q3 = wrap(q3)
         self.q1 = q1
         self.q2 = q2
         self.q3 = q3
@@ -212,10 +227,12 @@ class Node(AStarNode):
             return (self.q1, self.q2, self.q3)
 
         def s(theta):
-            return sin(2*theta)/2
+            # return sin(2*theta)/2
+            return sin(theta)
         
         def c(theta):
-            return cos(2*theta)/2
+            # return cos(2*theta)/2
+            return cos(theta)
         
         return (c(self.q1), c(self.q2), c(self.q3), s(self.q1), s(self.q2), s(self.q3))
 
@@ -278,6 +295,9 @@ def connectNeighbors(nodes, K):
     #        you create an undirected graph: the neighbors should be
     #        symmetric.  So, if node B becomes a neighbor to node A,
     #        then also add node A to the neighbors of node B.
+    # for node in nodes:
+    #     print(node.enable_wrap, end = ' ')
+
     X = np.array([node.coordinates(cartesian = True) for node in nodes])
     [dist, idx] = KDTree(X).query(X, k=len(nodes))
 
@@ -329,8 +349,8 @@ def main():
     visual = Visualization()
 
     # Create the start/goal nodes.
-    startnode = Node(startq1, startq2, startq3)
-    goalnode  = Node(goalq1,  goalq2,  goalq3)
+    startnode = Node(startq1, startq2, startq3, enable_wrap=ENABLE_WRAP)
+    goalnode  = Node(goalq1,  goalq2,  goalq3, enable_wrap=ENABLE_WRAP)
 
     # Show the start/goal nodes.
     visual.drawRobot(startnode, color='orange', linewidth=2)
@@ -347,7 +367,7 @@ def main():
 
     # Show the sample nodes.
     for node in nodes:
-        visual.drawNode(node, color='k', linewidth=1)
+        visual.drawNode(node, alpha=0.3, color='k', linewidth=1)
     visual.show("Showing the nodes (last link only)")
 
     # Add the start/goal nodes.
@@ -383,31 +403,34 @@ def main():
         print("UNABLE TO FIND A PATH")
         for node in nodes:
             if node.done:
-                visual.drawNode(node, color='r')
+                visual.drawNode(node, alpha=0.5, color='r')
         visual.show("Showing DONE nodes")
         return
 
     # Show the path.
-    visual.drawPath(path, color='r', linewidth=2)
+    visual.drawPath(path, color='r', alpha=0.5, linewidth=2)
     visual.show("Showing the raw path")
 
+    # Report the path.
+    print("original path: ")
+    print_path(path)
 
     # Post Process the path.
     path = PostProcess(path)
 
     # Unwrap: If wrapping (jumping any angle by 360deg to keep it in
     # the +/-180deg range) has occured, set the angle past +/-180deg.
-    for i in range(1,len(path)):
-        path[i] = Node(path[i-1].q1 + wrap(path[i].q1 - path[i-1].q1, 2*pi),
-                       path[i-1].q2 + wrap(path[i].q2 - path[i-1].q2, 2*pi),
-                       path[i-1].q3 + wrap(path[i].q3 - path[i-1].q3, 2*pi))
+    # for i in range(1,len(path)):
+    #     path[i] = Node(path[i-1].q1 + wrap(path[i].q1 - path[i-1].q1, 2*pi),
+    #                    path[i-1].q2 + wrap(path[i].q2 - path[i-1].q2, 2*pi),
+    #                    path[i-1].q3 + wrap(path[i].q3 - path[i-1].q3, 2*pi), enable_wrap=ENABLE_WRAP)
 
     # Report the path.
-    for node in path:
-        print(node)
+    print("post processed path: ")
+    print_path(path)
 
     # Show the post-processed path.
-    visual.drawPath(path, color='b', linewidth=2)
+    visual.drawPath(path, color='b', alpha=0.4, linewidth=2)
     visual.show("Showing the post-processed path")
 
 
