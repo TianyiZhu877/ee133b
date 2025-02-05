@@ -129,7 +129,7 @@ class Visualization:
             n = ceil(path[i].distance(path[i+1]) / Dqdraw)
             for j in range(n):
                 node = path[i].intermediate(path[i+1], j/n)
-                # print(node, node.enable_wrap)
+                print(node, node.enable_wrap)
                 self.drawRobot(node, *args, **kwargs)
                 plt.pause(0.1)
         self.drawRobot(path[-1], *args, **kwargs)
@@ -226,13 +226,11 @@ class Node(AStarNode):
         if (not self.enable_wrap):
             return (self.q1, self.q2, self.q3)
 
-        def s(theta):
-            # return sin(2*theta)/2
-            return sin(theta)
+        # s = lambda theta: sin(2*theta)/2
+        s = lambda theta: sin(theta)
         
-        def c(theta):
-            # return cos(2*theta)/2
-            return cos(theta)
+        # c = lambda theta: cos(2*theta)/2
+        c = lambda theta: cos(theta)
         
         return (c(self.q1), c(self.q2), c(self.q3), s(self.q1), s(self.q2), s(self.q3))
 

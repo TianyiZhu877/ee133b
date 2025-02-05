@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 #
-#   prmtriangles.py
+#   esttriangles.py
 #
-#   Use PRM to find a path around triangular obstacles.
+#   Use EST to find a path around triangular obstacles.
 #
 #   This is skeleton code. Please fix, especially where marked by "FIXME"!
 #
@@ -11,34 +11,31 @@ import numpy as np
 import random
 import time
 
-from math               import pi, sin, cos, sqrt, ceil, dist
+from math               import pi, sin, cos, atan2, sqrt, ceil, dist
 from scipy.spatial      import KDTree
 from shapely.geometry   import Point, LineString, Polygon, MultiPolygon
 from shapely.prepared   import prep
-
-from astar import AStarNode, astar
 
 
 ######################################################################
 #
 #   Parameters
 #
-#   FIXME: Define the N/K...
+#   Define the step size.  Also set the maximum number of nodes.
 #
-N = 250 #FIXME: Select the number of nodes
-K = 25 # FIXME: Select the number of nearest neighbors
+DSTEP = FIXME...
 
-# N = 5 #FIXME: Select the number of nodes
-# K = 5 # FIXME: Select the number of nearest neighbors
+# Maximum number of nodes.
+NMAX = 1500
 
-random.seed(3)
+
 ######################################################################
 #
 #   World Definitions
 #
 #   List of obstacles/objects as well as the start/goal.
 #
-(xmin, xmax) = (0, 12)
+(xmin, xmax) = (0, 10)
 (ymin, ymax) = (0, 12)
 
 # Collect all the triangle and prepare (for faster checking).
@@ -101,10 +98,10 @@ class Visualization:
 #
 #   Node Definition
 #
-class Node(AStarNode):
+class Node:
     def __init__(self, x, y):
-        # Setup the basic A* node.
-        super().__init__()
+        # Define a parent (cleared for now).
+        self.parent = None
 
         # Define/remember the state/coordinates (x,y).
         self.x = x
@@ -128,22 +125,15 @@ class Node(AStarNode):
 
     # Compute the relative Euclidean distance to another node.
     def distance(self, other):
-        # FIXME: compute and return the distance.
-        return np.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
-
-    ###############
-    # A* functions:
-    # Actual and Estimated costs.
-    def costToConnect(self, other):
-        return self.distance(other)
-
-    def costToGoEst(self, other):
-        return self.distance(other)
+        return dist(self.coordinates(), other.coordinates())
 
     ################
-    # PRM functions:
+    # Collision functions:
     # Check whether in free space.
     def inFreespace(self):
+        if (self.x <= xmin or self.x >= xmax or
+            self.y <= ymin or self.y >= ymax):
+            return False
         return triangles.disjoint(Point(self.coordinates()))
 
     # Check the local planner - whether this connects to another node.
@@ -154,70 +144,80 @@ class Node(AStarNode):
 
 ######################################################################
 #
-#   PRM Functions
+#   EST Functions
 #
-# Create the list of nodes.
-def createNodes(N):
-    # FIXME: create the list of valid nodes sampling uniformly in x and y.
-    # Add nodes sampled uniformly across the space.
-    nodes = []
-    sampled = 0
-    while len(nodes) < N:
-        sampled += 1
-        if (sampled > N*10):
-            print(f"Warning: to many points sampled lies on obstacles, ditched with {len(nodes)} nodes")
-            return nodes
-        
-        new_node = Node(random.uniform(xmin, xmax), random.uniform(ymin, ymax))
-        if new_node.inFreespace():
-            nodes.append(new_node)
-    
-    return nodes
-            
+def est(startnode, goalnode, visual):
+    # Start the tree with the startnode (set no parent just in case).
+    startnode.parent = None
+    tree = [startnode]
 
-# Connect the nearest neighbors
-def connectNearestNeighbors(nodes, K):
-    # Clear any existing neighbors.  Use a set to add below.
-    for node in nodes:
-        node.neighbors = set()
+    # Function to attach a new node to an existing node: attach the
+    # parent, add to the tree, and show in the figure.
+    def addtotree(oldnode, newnode):
+        newnode.parent = oldnode
+        tree.append(newnode)
+        visual.drawEdge(oldnode, newnode, color='g', linewidth=1)
+        visual.show()
 
-    # Determine the indices for the K nearest neighbors.  Distance is
-    # computed as the Euclidean distance of the coordinates.  This
-    # also reports the node itself as the closest neighbor, so add one
-    # extra here and ignore the first element below.
-    X = np.array([node.coordinates() for node in nodes])
-    [dist, idx] = KDTree(X).query(X, k=(K+1))
+    # Loop - keep growing the tree.
+    while True:
+        # Determine the local density by the number of nodes nearby.
+        # KDTree uses the coordinates to compute the Euclidean distance.
+        # It returns a NumPy array, same length as nodes in the tree.
+        X = np.array([node.coordinates() for node in tree])
+        kdtree  = KDTree(X)
+        numnear = kdtree.query_ball_point(X, r=1.5*DSTEP, return_length=True)
 
-    # Add the edges.  Ignore the first neighbor (being itself).
-    for i, nbrs in enumerate(idx):
-        for n in nbrs[1:]:
-            if nodes[i].connectsTo(nodes[n]):
-                nodes[i].neighbors.add(nodes[n])
-                nodes[n].neighbors.add(nodes[i])
+        # Directly determine the distances to the goal node.
+        distances = np.array([node.distance(goalnode) for node in tree])
 
-# Post Process the Path
+        # Select the node from which to grow, which minimizes some metric.
+        FIXME:
+        grownode = ....
+
+
+        # Check the incoming heading, potentially to bias the next node.
+        if grownode.parent is None:
+            heading = 0
+        else:
+            heading = atan2(grownode.y - grownode.parent.y,
+                            grownode.x - grownode.parent.x)
+
+        # Find something nearby: keep looping until the tree grows.
+        while True:
+            # Pick the next node randomly.
+            FIXME:
+            nextnode = ...
+
+            # Try to connect.
+            FIXME...
+
+        # Once grown, also check whether to connect to goal.
+        FIXME...
+
+        # Check whether we should abort - too many nodes.
+        if (len(tree) >= NMAX):
+            print("Aborted with the tree having %d nodes" % len(tree))
+            return None
+
+    # Build the path.
+    path = [goalnode]
+    while path[0].parent is not None:
+        path.insert(0, path[0].parent)
+
+    # Report and return.
+    print("Finished  with the tree having %d nodes" % len(tree))
+    return path
+
+
+# Post process the path.
 def PostProcess(path):
-    # FIXME: Remove nodes in the path than can be skipped without collisions
-    n = len(path)
-    if n == 0:
-        return []
-    # if n == 1:
-    
-    new_path = [path[0]]
-
-    current_ptr = 0
-    while current_ptr<(n-1):
-        current = path[current_ptr]
-        next_ptr = current_ptr+1
-        while (next_ptr < n-1) and (current.connectsTo(path[next_ptr+1])):
-            next_ptr += 1
-        new_path.append(path[next_ptr])
-        current_ptr = next_ptr
-    
-    return new_path
-        
-        
-
+    i = 0
+    while (i < len(path)-2):
+        if path[i].connectsTo(path[i+2]):
+            path.pop(i+1)
+        else:
+            i = i+1
 
 
 ######################################################################
@@ -226,7 +226,7 @@ def PostProcess(path):
 #
 def main():
     # Report the parameters.
-    print('Running with', N, 'nodes and', K, 'neighbors.')
+    print('Running with step size ', DSTEP, ' and up to ', NMAX, ' nodes.')
 
     # Create the figure.
     visual = Visualization()
@@ -241,52 +241,13 @@ def main():
     visual.show("Showing basic world")
 
 
-    # Create the list of nodes.
-    print("Sampling the nodes...")
-    tic = time.time()
-    nodes = createNodes(N)
-    toc = time.time()
-    print("Sampled the nodes in %fsec." % (toc-tic))
+    # Run the EST planner.
+    print("Running EST...")
+    path = est(startnode, goalnode, visual)
 
-    # Show the sample nodes.
-    for node in nodes:
-        visual.drawNode(node, color='k', marker='x')
-    visual.show("Showing the nodes")
-
-    # Add the start/goal nodes.
-    nodes.append(startnode)
-    nodes.append(goalnode)
-
-
-    # Connect to the nearest neighbors.
-    print("Connecting the nodes...")
-    tic = time.time()
-    connectNearestNeighbors(nodes, K)
-    toc = time.time()
-    print("Connected the nodes in %fsec." % (toc-tic))
-
-    # Show the neighbor connections.
-    for (i,node) in enumerate(nodes):
-        for neighbor in node.neighbors:
-            if neighbor not in nodes[:i]:
-                visual.drawEdge(node, neighbor, color='g', linewidth=0.5)
-    visual.show("Showing the full graph")
-
-
-    # Run the A* planner.
-    print("Running A*...")
-    tic = time.time()
-    path = astar(nodes, startnode, goalnode)
-    toc = time.time()
-    print("Ran A* in %fsec." % (toc-tic))
-
-    # If unable to connect, show the part explored.
+    # If unable to connect, just note before closing.
     if not path:
-        print("UNABLE TO FIND A PATH")
-        for node in nodes:
-            if node.done:
-                visual.drawNode(node, color='r', marker='o')
-        visual.show("Showing DONE nodes")
+        visual.show("UNABLE TO FIND A PATH")
         return
 
     # Show the path.
@@ -294,8 +255,8 @@ def main():
     visual.show("Showing the raw path")
 
 
-    # Post Process the path.
-    path = PostProcess(path)
+    # Post process the path.
+    PostProcess(path)
 
     # Show the post-processed path.
     visual.drawPath(path, color='b', linewidth=2)

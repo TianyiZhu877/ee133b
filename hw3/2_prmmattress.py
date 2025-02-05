@@ -26,14 +26,15 @@ from vandercorput       import vandercorput
 #
 #   FIXME: Define the N/K...
 #
-N = 700     # FIXME: Select the number of nodes
+N = 250     # FIXME: Select the number of nodes
 K = 20      # FIXME: Select the number of nearest neighbors
 
 # FIXME: Include the bonus wall for part (c)
 BONUSWALL = False
-MAX_TRAIL_COEFF = 10
+near_edges = True
+MAX_TRAIL_COEFF = 100
 
-random.seed(20)
+random.seed(1)
 ######################################################################
 #
 #   World Definitions
@@ -205,25 +206,56 @@ class Node(AStarNode):
                 return False
         return True
 
+class sampleCounter():
+    def __init__(self, max_trails):
+        self.max_trails = max_trails
+        self.sampled = 0
+    
+    def count(self, error_message:str = None):
+        self.sampled += 1
+        if (self.sampled > self.max_trails):
+            if error_message is not None:
+                print(error_message)
+            return True
+        return False
 
 ######################################################################
 #
 #   PRM Functions
 #
 # Create the list of nodes.
-def createNodes(N):
+def createNodes(N, near_edges:bool = False, max_trail_coeff = 10,
+                init_search_radius = 0.15, radius_expand_coeff = 1.2, max_search_radius = 20, dt_limit = pi/10):
     # FIXME: create the list via (a) uniform sampling and (b) near edges.
     nodes = []
-    sampled = 0
+    sample_counter = sampleCounter(N * max_trail_coeff)
+    error_msg = "Warning: to many points sampled lies on obstacles, ditched with %d nodes"
+
     while len(nodes) < N:
-        sampled += 1
-        if (sampled > N * MAX_TRAIL_COEFF):
-            print(f"Warning: to many points sampled lies on obstacles, ditched with {len(nodes)} nodes")
-            return nodes
         
-        new_node = Node(random.uniform(xmin, xmax), random.uniform(ymin, ymax), random.uniform(-pi/2, pi/2))
-        if new_node.inFreespace():
-            nodes.append(new_node)
+        if (not near_edges):
+            new_node = Node(random.uniform(xmin, xmax), random.uniform(ymin, ymax), random.uniform(-pi/2, pi/2))
+            if (sample_counter.count(error_msg%len(nodes))): return nodes
+            if new_node.inFreespace():
+                nodes.append(new_node)
+        else:
+            test_node = Node(random.uniform(xmin, xmax), random.uniform(ymin, ymax), random.uniform(-pi/2, pi/2))
+            # if (sample_counter.count(error_msg%len(nodes))): break
+
+            if not test_node.inFreespace():
+                r = init_search_radius
+                while r < max_search_radius:
+                    theta = random.uniform(-pi, pi)
+                    dt = random.uniform(-dt_limit, dt_limit)
+
+                    new_node = Node(test_node.x + r*cos(theta), test_node.y + r*sin(theta), test_node.t + dt)
+                    if (sample_counter.count(error_msg%len(nodes))): return nodes
+                    
+                    if new_node.inFreespace():
+                        nodes.append(new_node)
+                        break
+                    
+                    r *= radius_expand_coeff
     
     return nodes
 
@@ -313,7 +345,7 @@ def main():
     # Create the list of nodes.
     print("Sampling the nodes...")
     tic = time.time()
-    nodes = createNodes(N)
+    nodes = createNodes(N, near_edges = near_edges, max_trail_coeff = MAX_TRAIL_COEFF)
     toc = time.time()
     print("Sampled the nodes in %fsec." % (toc-tic))
 
