@@ -23,13 +23,15 @@ from shapely.prepared   import prep
 #
 #   Define the step size.  Also set the maximum number of nodes.
 #
-DSTEP = FIXME...
+DSTEP = 0.5 # FIXME
+
+P_target_goal = 0.05
 
 # Maximum number of steps (attempts) or nodes (successful steps).
 SMAX = 50000
 NMAX = 1500
 
-
+random.seed(0)
 ######################################################################
 #
 #   World Definitions
@@ -164,8 +166,10 @@ def rrt(startnode, goalnode, visual):
     steps = 0
     while True:
         # Determine the target state.
-        FIXME:
-        targetnode = ...
+        # FIXME:
+        targetnode = goalnode
+        if random.uniform(0,1) > P_target_goal:
+            targetnode = Node(random.uniform(xmin, xmax), random.uniform(ymin, ymax))
 
         # Directly determine the distances to the target node.
         distances = np.array([node.distance(targetnode) for node in tree])
@@ -174,8 +178,9 @@ def rrt(startnode, goalnode, visual):
         d         = distances[index]
 
         # Determine the next node.
-        FIXME:
-        nextnode = ...
+        # FIXME:
+        nextnode = nearnode.intermediate(targetnode, min(DSTEP/d, 1))
+        
 
         # Check whether to attach.
         if nextnode.inFreespace() and nearnode.connectsTo(nextnode):
@@ -183,9 +188,9 @@ def rrt(startnode, goalnode, visual):
 
             # If within DSTEP, also try connecting to the goal.  If
             # the connection is made, break the loop to stop growing.
-            FIXME:
-            if ...:
-                ...
+            # FIXME:
+            if (nextnode.distance(goalnode) <= DSTEP) and (nextnode.connectsTo(goalnode)):
+                addtotree(nextnode, goalnode)
                 break
 
         # Check whether we should abort - too many steps or nodes.
