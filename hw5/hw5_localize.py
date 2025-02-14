@@ -59,11 +59,11 @@ def validPosition(row, col):
 # for all new_rol, new_col such that p != 0
 # 
 
-def getNonzeroTransitions(row, col, drow, dcol):
+def getNonzeroTransitions(row, col, drow, dcol, pCmdUsed):
     new_row, new_col = row+drow, col+dcol
     if not validPosition(new_row, new_col):
-        return [(1, row, col)]
-    return [(1, new_row, new_col)]
+        return [(1, new_row, new_col)]
+    return [(1-pCmdUsed, row, col), (pCmdUsed, new_row, new_col)]
 
 #
 #  Prediction
@@ -82,7 +82,7 @@ def computePrediction(bel, drow, dcol, pCmdUsed = 1):
     # FIXME...
     for row_tn1 in range(rows):
         for col_tn1 in range(cols):
-            for (p, row_t, col_t) in getNonzeroTransitions(row_tn1, col_tn1, drow, dcol):
+            for (p, row_t, col_t) in getNonzeroTransitions(row_tn1, col_tn1, drow, dcol, pCmdUsed):
                 if withinBound(row_t, col_t):
                     prd[row_t, col_t] += (bel[row_tn1, col_tn1] * p)
 
@@ -134,7 +134,7 @@ def getDir(d):
     if d==0:
         return 0
     return 1 if d>0 else -1
-    
+
 #
 #  Pre-compute the Sensor Probability Grid
 #
@@ -168,18 +168,18 @@ def main():
     # FIXME... PICK WHAT THE "REALITY" SHOULD SIMULATE:
     # Initialize the robot simulation.
     # 1a 
-    robot=Robot(walls)
-    # 1b robot=Robot(walls, row=12, col=26)
-    # 2  robot=Robot(walls, row=12, col=26, pSensor=[0.9,0.6,0.3])
-    # 3  robot=Robot(walls, row=15, col=47, pSensor=[0.9,0.6,0.3], pCommand=0.8)
+    # robot=Robot(walls)
+    # robot=Robot(walls, row=12, col=26)  # 1b 
+    # robot=Robot(walls, row=12, col=26, pSensor=[0.9,0.6,0.3])       # 2  
+    robot=Robot(walls, row=15, col=47, pSensor=[0.9,0.6,0.3], pCommand=0.8)     # 3  
     # 4  robot=Robot(walls, row= 7, col=12, pSensor=[0.9,0.6,0.3], pCommand=0.8, kidnap=True)
     # Or to play:
     #    robot=Robot(walls, pSensor=[0.9,0.6,0.3], pCommand=0.8)
 
 
     # Initialize your localization parameters.
-    pSenDist = [1.0] # FIXME... PICK WHAT YOUR LOCALIZATION SHOULD ASSUME
-    pCmdUsed = 1 # FIXME... PICK WHAT YOUR LOCALIZATION SHOULD ASSUME
+    pSenDist = [0.9,0.6,0.3] # FIXME... PICK WHAT YOUR LOCALIZATION SHOULD ASSUME
+    pCmdUsed = 0.8 # FIXME... PICK WHAT YOUR LOCALIZATION SHOULD ASSUME
 
     # Report.
     print("Localization is assuming pSenDist = " + str(pSenDist) +
@@ -197,14 +197,14 @@ def main():
     probLeft  = precomputeSensorProbability( 0, -1, pSenDist)
 
     # Show the sensor probability maps.
-    visual.Show(probUp)
-    input("Probability of proximal sensor up reporting True")
-    visual.Show(probRight)
-    input("Probability of proximal sensor right reporting True")
-    visual.Show(probDown)
-    input("Probability of proximal sensor down reporting True")
-    visual.Show(probLeft)
-    input("Probability of proximal sensor left reporting True")
+    # visual.Show(probUp)
+    # input("Probability of proximal sensor up reporting True")
+    # visual.Show(probRight)
+    # input("Probability of proximal sensor right reporting True")
+    # visual.Show(probDown)
+    # input("Probability of proximal sensor down reporting True")
+    # visual.Show(probLeft)
+    # input("Probability of proximal sensor left reporting True")
 
 
     # Start with a uniform belief grid.
@@ -217,12 +217,12 @@ def main():
 
         # Get the command key to determine the direction.
         while True:
-            key = input("Cmd (q=quit, i=up, m=down, j=left, k=right) ?")
+            key = input("Cmd (q=quit, w=up, s=down, a=left, d=right) ?")
             if   (key == 'q'):  return
-            elif (key == 'i'):  (drow, dcol) = (-1,  0) ; break
-            elif (key == 'm'):  (drow, dcol) = ( 1,  0) ; break
-            elif (key == 'j'):  (drow, dcol) = ( 0, -1) ; break
-            elif (key == 'k'):  (drow, dcol) = ( 0,  1) ; break
+            elif (key == 'w'):  (drow, dcol) = (-1,  0) ; break
+            elif (key == 's'):  (drow, dcol) = ( 1,  0) ; break
+            elif (key == 'a'):  (drow, dcol) = ( 0, -1) ; break
+            elif (key == 'd'):  (drow, dcol) = ( 0,  1) ; break
 
         # Move the robot in the simulation.
         robot.Command(drow, dcol)
