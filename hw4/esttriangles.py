@@ -23,12 +23,17 @@ from shapely.prepared   import prep
 #
 #   Define the step size.  Also set the maximum number of nodes.
 #
-DSTEP = FIXME...
+DSTEP = 0.5     # FIXME
 
 # Maximum number of nodes.
 NMAX = 1500
 
+# heading_random_generator = lambda placeholder: np.random.uniform(-pi, pi)
+heading_random_generator = lambda mean: np.random.normal(mean, pi/2)
+# heading_random_generator = lambda mean: np.random.normal(mean, pi/8)
 
+scale = 1
+np.random.seed(10)
 ######################################################################
 #
 #   World Definitions
@@ -172,8 +177,10 @@ def est(startnode, goalnode, visual):
         distances = np.array([node.distance(goalnode) for node in tree])
 
         # Select the node from which to grow, which minimizes some metric.
-        FIXME:
-        grownode = ....
+        # FIXME:
+        min_indices = np.argwhere(np.min(numnear+scale*distances) == numnear+scale*distances).flatten()
+        # print(numnear, min_indices)
+        grownode = tree[np.random.choice(min_indices)]
 
 
         # Check the incoming heading, potentially to bias the next node.
@@ -183,17 +190,25 @@ def est(startnode, goalnode, visual):
             heading = atan2(grownode.y - grownode.parent.y,
                             grownode.x - grownode.parent.x)
 
+        nextnode = None
         # Find something nearby: keep looping until the tree grows.
-        while True:
+        while nextnode is None:
             # Pick the next node randomly.
-            FIXME:
-            nextnode = ...
+            # FIXME:
+            theta = heading_random_generator(heading)
+            candidate = Node(grownode.x + DSTEP*cos(theta), grownode.y + DSTEP*sin(theta))
 
             # Try to connect.
-            FIXME...
+            if candidate.inFreespace() and grownode.connectsTo(candidate):
+                nextnode = candidate
+
+        addtotree(grownode, nextnode)   
 
         # Once grown, also check whether to connect to goal.
-        FIXME...
+        # FIXME...
+        if (nextnode.distance(goalnode) <= DSTEP) and (nextnode.connectsTo(goalnode)):
+            addtotree(nextnode, goalnode)
+            break
 
         # Check whether we should abort - too many nodes.
         if (len(tree) >= NMAX):
