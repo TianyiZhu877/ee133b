@@ -62,7 +62,7 @@ def validPosition(row, col):
 def getNonzeroTransitions(row, col, drow, dcol, pCmdUsed):
     new_row, new_col = row+drow, col+dcol
     if not validPosition(new_row, new_col):
-        return [(1, new_row, new_col)]
+        return [(1, row, col)]
     return [(1-pCmdUsed, row, col), (pCmdUsed, new_row, new_col)]
 
 #
@@ -74,7 +74,7 @@ def getNonzeroTransitions(row, col, drow, dcol, pCmdUsed):
 #    prd         Grid of probabilities (prediction)
 #
 
-def computePrediction(bel, drow, dcol, pCmdUsed = 1):
+def computePrediction(bel, drow, dcol, pCmdUsed = 1, expect_jump = 0):
     # Prepare an empty prediction grid.
     prd = np.zeros((rows,cols))
 
@@ -82,9 +82,20 @@ def computePrediction(bel, drow, dcol, pCmdUsed = 1):
     # FIXME...
     for row_tn1 in range(rows):
         for col_tn1 in range(cols):
+            empty_cells = np.sum(1.0 - walls)
+            # print(empty_cells)
+            prd += (bel[row_tn1, col_tn1] * (1-walls) * expect_jump / empty_cells)
+            # dprd = bel[row_tn1, col_tn1] * np.sum((1-walls) * expect_jump / empty_cells)
+            # print(walls)
             for (p, row_t, col_t) in getNonzeroTransitions(row_tn1, col_tn1, drow, dcol, pCmdUsed):
                 if withinBound(row_t, col_t):
-                    prd[row_t, col_t] += (bel[row_tn1, col_tn1] * p)
+                    prd[row_t, col_t] += (bel[row_tn1, col_tn1] * p * (1-expect_jump))
+                    # dprd +=  (bel[row_tn1, col_tn1] * p * (1-expect_jump))
+                    # print(p * (1-expect_jump))
+                else:
+                    print("out of bound!!!!")
+            # print("total dprd:", dprd, bel[row_tn1, col_tn1])
+            
 
     # Return the prediction grid
     return prd
@@ -171,8 +182,8 @@ def main():
     # robot=Robot(walls)
     # robot=Robot(walls, row=12, col=26)  # 1b 
     # robot=Robot(walls, row=12, col=26, pSensor=[0.9,0.6,0.3])       # 2  
-    robot=Robot(walls, row=15, col=47, pSensor=[0.9,0.6,0.3], pCommand=0.8)     # 3  
-    # 4  robot=Robot(walls, row= 7, col=12, pSensor=[0.9,0.6,0.3], pCommand=0.8, kidnap=True)
+    # robot=Robot(walls, row=15, col=47, pSensor=[0.9,0.6,0.3], pCommand=0.8)     # 3  
+    robot=Robot(walls, row= 7, col=12, pSensor=[0.9,0.6,0.3], pCommand=0.8, kidnap=True)        # 4  
     # Or to play:
     #    robot=Robot(walls, pSensor=[0.9,0.6,0.3], pCommand=0.8)
 
@@ -180,6 +191,7 @@ def main():
     # Initialize your localization parameters.
     pSenDist = [0.9,0.6,0.3] # FIXME... PICK WHAT YOUR LOCALIZATION SHOULD ASSUME
     pCmdUsed = 0.8 # FIXME... PICK WHAT YOUR LOCALIZATION SHOULD ASSUME
+    expect_jump = 1e-2
 
     # Report.
     print("Localization is assuming pSenDist = " + str(pSenDist) +
@@ -229,13 +241,13 @@ def main():
 
 
         # Compute a prediction.
-        prd = computePrediction(bel, drow, dcol, pCmdUsed)
+        prd = computePrediction(bel, drow, dcol, pCmdUsed, expect_jump=expect_jump)
         #visual.Show(prd)
         #input("Showing the prediction")
 
         # Check the prediction.
         if abs(np.sum(prd) - 1.0) > 1e-12:
-            print("WARNING: Prediction does not add up to 100%")
+            print("WARNING: Prediction does not add up to 100%", np.sum(prd))
 
 
         # Correct the prediction/execute the measurement update.
