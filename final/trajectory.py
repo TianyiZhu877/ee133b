@@ -2,6 +2,7 @@ import numpy as np
 from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter
+from scipy.spatial import KDTree
 
 class Trajectory:
     def __init__(self, points, widths = 2, width_func = None, dstep=0.05, sigma = 15.0):
@@ -36,11 +37,27 @@ class Trajectory:
         self.points = np.column_stack((smoothed_x, smoothed_y))
         print(new_distances)
         self.distances = new_distances
+        self.tree = KDTree(self.points)
 
         if width_func is not None:
             self.widths = width_func(self.distances)
 
+
         # might want to interpolate again here?
+
+    def nearest_point(self, point):
+        dist, idx = self.tree.query(point)
+        return idx, dist
+    
+    
+    def is_inside_track(self, point):
+        """Checks if the car is within track bounds."""
+        # Find the closest track center point
+        # dists = np.linalg.norm(self.track_center.T - np.array([self.x, self.y]), axis=1)
+        # track_half_width = self.track_width[idx] / 2
+        idx, dist = self.nearest_point(point)
+
+        return dist <= self.track_width[idx]
 
 def sin_width_func(x, T = 6, min_A = 1.6, max_A = 2):
     return min_A + (max_A - min_A)*np.sin(x/T)
@@ -60,7 +77,8 @@ def get_sin_traj(T = 3, A = 5):
     x = np.arange(0, 50, 0.1)
     y = A*np.sin(x/T)
     points = np.column_stack((x, y))
-    traj = Trajectory(points)
+    # traj = Trajectory(points)
+    traj = Trajectory(points, width_func = sin_width_func)
     return traj
 
 
