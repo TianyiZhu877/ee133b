@@ -1,6 +1,11 @@
 import matplotlib.pyplot as plt
+import time
 
 class Visualizer:
+    def __init__(self):
+        plt.axis('equal')
+
+
     def plot_trajectory(self, traj):
         # plt.show()
 
@@ -13,8 +18,21 @@ class Visualizer:
             plt.gca().add_patch(circle)
 
         plt.plot(traj.points[:, 0], traj.points[:, 1], 'y-', label='Original Line', alpha=0.2)
+        self.show()
 
+    
+    def plot_node(self, node):
+
+        if node.parent is not None:
+            x = [node.parent.x, node.x]
+            y= [node.parent.y, node.y]
+        else:
+            x = node.x
+            y= node.y
+        
+        plt.plot(x,y , '-', color='green')
+
+        self.show()
 
     def show(self):
-        plt.axis('equal')
         plt.show()

@@ -21,6 +21,7 @@ class Trajectory:
         interpolated_x = interp_x(new_distances)
         interpolated_y = interp_y(new_distances)
         interpolated_points = np.column_stack((interpolated_x, interpolated_y))
+        self.dstep = dstep
 
         if not np.isscalar(widths):
             interp_width = interp1d(distances, widths, kind='linear')
@@ -42,6 +43,7 @@ class Trajectory:
         if width_func is not None:
             self.widths = width_func(self.distances)
 
+        self.tangent = self.points[1:] - self.points[:-1]
 
         # might want to interpolate again here?
 
@@ -57,7 +59,12 @@ class Trajectory:
         # track_half_width = self.track_width[idx] / 2
         idx, dist = self.nearest_point(point)
 
-        return dist <= self.track_width[idx]
+        return dist <= self.widths[idx]
+
+    def get_waypoint_bounded(self, idx):
+        """Returns the waypoint at the given index, bounded by the trajectory length."""
+        return self.points[max(min(idx, len(self.points) - 1), 0)]
+    
 
 def sin_width_func(x, T = 6, min_A = 1.6, max_A = 2):
     return min_A + (max_A - min_A)*np.sin(x/T)
@@ -80,6 +87,7 @@ def get_sin_traj(T = 3, A = 5):
     # traj = Trajectory(points)
     traj = Trajectory(points, width_func = sin_width_func)
     return traj
+
 
 
 # if __name__ == '__main__':
