@@ -5,7 +5,7 @@ from scipy.ndimage import gaussian_filter
 from scipy.spatial import KDTree
 
 class Trajectory:
-    def __init__(self, points, widths = 2, width_func = None, dstep=0.05, sigma = 15.0):
+    def __init__(self, points, widths = 2, width_func = None, dstep=0.05, sigma = 30.0):
 
         
         # Calculate the cumulative distance along the line

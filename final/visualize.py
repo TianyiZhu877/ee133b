@@ -35,4 +35,4 @@ class Visualizer:
         self.show()
 
     def show(self):
-        plt.show()
+        plt.draw()

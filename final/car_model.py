@@ -2,8 +2,8 @@ import numpy as np
 from node import Node
 
 class carModel:
-    def __init__(self, max_steer = np.pi/4, dt=0.01, mu=0.8, C_alpha=50000, F_z=4000, L=2.5, a=1.2, b=1.3,
-                 a_min=-12, a_max=10,
+    def __init__(self, steer_limit = np.pi/3, dt=0.01, mu=1.2, C_alpha=40000, F_z=5000, 
+                 L=2.5, L_f = 1.2, grip_loss_k = 2.5, a_min=-12, a_max=10,
                  controller_config = None):
         """
         Represents a state in the RRT tree with bicycle model dynamics.
@@ -29,24 +29,28 @@ class carModel:
         # self.track_width = track_width
         self.dt = dt
         self.mu = mu
-        self.C_alpha = C_alpha
-        self.F_z = F_z
+        # self.C_alpha = C_alpha
+        # self.F_z = F_z
+        # self.grip_loss_k = grip_loss_k
         self.L = L
-        self.a = a
-        self.b = b
-        self.max_steer = max_steer
+        # self.a = a
+        # self.b = b
+        self.L_f = L_f
+        self.steer_limit = steer_limit
         self.a_min = a_min
         self.a_max = a_max
+        self.slip_coeff = L * grip_loss_k * mu * F_z / (L_f*C_alpha)
 
         self.controller_config = controller_config
 
 
-    def max_steering_angle(self, node):
+    def max_steering_angle(self, v):
         """Calculates the maximum steering angle before tire slip occurs."""
-        slip_limit = self.mu * self.F_z / self.C_alpha
-        dynamic_max_steer = np.arctan(slip_limit / (1 + (self.a + self.b) / self.L * node.v_x))
-        print('slip_limit', dynamic_max_steer)
-        return min(dynamic_max_steer, self.max_steer)
+        # slip_limit = self.mu * self.F_z / self.C_alpha
+        # dynamic_max_steer = np.arctan(slip_limit / (1 + (self.a + self.b) / self.L * v_x))
+        # print('slip_limit dynamic_max_steer', slip_limit, dynamic_max_steer)
+        dynamic_max_steer = np.arctan(self.slip_coeff*10/v)
+        return min(dynamic_max_steer, self.steer_limit)
 
 
     def generate_child(self, node, action, traj):
@@ -67,7 +71,7 @@ class carModel:
             # print('acceleration', acceleration)
             return None
         
-        max_steer = min(self.max_steering_angle(node), self.max_steer)
+        max_steer = min(self.max_steering_angle(node.v_x), self.steer_limit)
         if abs(steering_angle) > max_steer*1.01:
             # print('steering_angle', steering_angle, max_steer)
             return None  # Reject if steering causes slip
@@ -102,7 +106,7 @@ class carModel:
         test_inputs = [
             (0, 0),  # No input
             (1, 0), (-1, 0),  # Acceleration
-            (0, self.max_steering_angle(node)), (0, -self.max_steering_angle(node))  # Max steering
+            (0, self.max_steering_angle(node.v_x)), (0, -self.max_steering_angle(node.v_x))  # Max steering
         ]
         for acc, steer in test_inputs:
             if self.generate_child(node, (acc, steer), traj) is not None:
@@ -110,12 +114,13 @@ class carModel:
         return True
     
     def controller(self, node, traj, idx, target_speed):
-        d_lookahead = self.controller_config['k_lookahead'] * node.speed()
+        d_lookahead = self.controller_config['d_lookahead'] 
         dxy = traj.get_waypoint_bounded(idx + int(d_lookahead / traj.dstep)) - node.position()
+        print('d_lookahead', d_lookahead)
 
         # Transform lookahead point into car's local coordinate system
         local_x = dxy[0] * np.cos(-node.theta) - dxy[1] * np.sin(-node.theta)
-        local_y = dxy[0] * np.sin(-node.theta) + dxy[0] * np.cos(-node.theta)
+        local_y = dxy[0] * np.sin(-node.theta) + dxy[1] * np.cos(-node.theta)
 
         if local_x < 0:  
             print('Controller warning: Lookahead point should always be in front')
@@ -127,8 +132,9 @@ class carModel:
         steer = np.arctan(self.L * kappa)
 
         # Compute acceleration
-        v_error = target_speed - node.speed()
+        v_error = target_speed - node.v_x
         acc = self.controller_config['P_acc'] * v_error
+        print('acc', acc, target_speed, node.v_x)
 
         return acc, steer
     

@@ -3,6 +3,7 @@ from visualize import Visualizer
 from tree_search import treeSearch
 from car_model import carModel
 from node import Node
+import matplotlib.pyplot as plt
 
 # traj = get_sharpe_angle_traj()
 def get_starting_point_from_traj(traj, start_speed = 10):
@@ -12,7 +13,7 @@ def get_starting_point_from_traj(traj, start_speed = 10):
     return Node(x, y, theta, start_speed,0, 0, 0)
 
 controller_config = {
-    'k_lookahead': 1.2,
+    'd_lookahead': 1.2,
     'P_acc' : 1.8
 }
 
@@ -26,10 +27,18 @@ tree_search_config = {
 
 
 car_model = carModel(controller_config = controller_config)
-traj = get_sharpe_angle_traj()
+
+
+# for v in range(1, 35, 5):
+#     print(v, car_model.max_steering_angle(v)/3.1416*180)
+
+
+# traj = get_sharpe_angle_traj()
+traj = get_sin_traj()
 vis = Visualizer()
 vis.plot_trajectory(traj)
 search = treeSearch(traj, car_model, vis, tree_search_config)
 # print(traj.tangent)
-start_node = get_starting_point_from_traj(traj, 5)
-search.search(start_node, 10)
+start_node = get_starting_point_from_traj(traj, 10)
+search.search(start_node, 12)
+plt.show()

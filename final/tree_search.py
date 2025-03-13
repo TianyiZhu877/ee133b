@@ -30,10 +30,10 @@ class treeSearch:
     def generate_action(self, node , action):
         acc, steer = action
 # simple clipping right now, adding randomization and gridding later
-        max_steer = self.model.max_steering_angle(node)
+        max_steer = self.model.max_steering_angle(node.v_x)
         actual_acc = np.clip(acc, self.model.a_min, self.model.a_max)
         actual_steer = np.clip(steer, -max_steer, max_steer)
-        print('actual_steer', actual_steer, self.model.max_steer)
+        print('target steer, max_steer', steer, max_steer)
         return (actual_acc, actual_steer)
 
     def search(self, start, target_speed, goal_idx = -1):
