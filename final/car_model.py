@@ -95,7 +95,7 @@ class carModel:
                         # self.track_center, self.track_width, self.mu, self.C_alpha, self.F_z, self.L, self.a, self.b)
         # print('new_node', new_node)
         # Reject if the new node is outside the track
-        if not traj.is_inside_track((new_node.x, new_node.y)):
+        if not node.is_valid(traj):
             return None
 
         return new_node
@@ -113,9 +113,7 @@ class carModel:
                 return False
         return True
     
-    def controller(self, node, traj, idx, target_speed):
-        d_lookahead = self.controller_config['d_lookahead'] 
-        target = traj.get_waypoint_bounded(idx + int(d_lookahead / traj.dstep))
+    def controller(self, node, target, target_speed):
         dxy = target - node.position()
         # print('d_lookahead', d_lookahead)
 

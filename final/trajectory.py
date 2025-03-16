@@ -61,11 +61,12 @@ class Trajectory:
         # track_half_width = self.track_width[idx] / 2
         idx, dist = self.nearest_point(point)
 
-        return dist <= self.widths[idx]
+        return abs(dist) <= self.widths[idx]
 
     def get_waypoint_bounded(self, idx):
         """Returns the waypoint at the given index, bounded by the trajectory length."""
-        return self.points[max(min(idx, len(self.points) - 1), 0)]
+        idx = max(min(idx, len(self.points) - 1), 0)
+        return self.points[idx], idx
     
 
 def sin_width_func(x, T = 6, min_A = 1.6, max_A = 2):

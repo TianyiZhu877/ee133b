@@ -1,5 +1,10 @@
 import numpy as np
 
+OPTIMAL = 0
+LEFT = 1
+RIGHT = 2
+
+
 class treeSearch:
     def __init__(self, traj, model, visualizer, config):
         self.model = model
@@ -10,25 +15,52 @@ class treeSearch:
         self.expansion_grid = []
         self.frontier_idx = 0
         self.frontier_node = None
-        
-    def add_node(self, node, prev_is_frontier = False):
+
+        self.visualize_max_speed = 20
+        self.visualize = False
+        self.goal_idx = -1
+
+        np.random.seed(0)
+    
+    def add_node(self, node):
         if node is None:
-            self.frontier_node = None
+            # self.frontier_node = None
             return 
         
-        idx, dist = self.traj.nearest_point(node.position())
-        frontier_expaned = False
+        if self.visualize:
+            self.visualizer.plot_node(node, self.visualize_max_speed)
 
-        if (prev_is_frontier) or (idx > self.frontier_idx):
+        idx, dist = node.get_idx_dist(self.traj)
+        # frontier_expaned = False
+
+        if (idx > self.frontier_idx):
             self.frontier_node = node
             self.frontier_idx = idx
-            frontier_expaned = True
-        else:
-            self.frontier_node = None
+        # else:
+        #     self.frontier_node = None
+
+    def grow_from_node(self, node, target_policy = OPTIMAL):
+        current_node = node
+
+        while not self.model.has_no_valid_children(current_node, self.traj):
+            idx, dist = current_node.get_idx_dist(self.traj)
+
+            if idx == self.goal_idx:
+                return current_node.build_waypoints()
+            
+            d_lookahead = self.config['d_lookahead'] 
+            idx = idx + int(d_lookahead / self.traj.dstep) # + np.random.uniform(0, 0)
+            target, target_idx = self.traj.get_waypoint_bounded(idx)
+
+            mean_action = self.model.controller(current_node, target, self.visualize_max_speed)
+            action = self.generate_action(current_node, mean_action, target_idx)
+            new_node = self.model.generate_child(current_node, action, self.traj)
+            self.add_node(new_node)
+            current_node = new_node
 
 
-    def generate_action(self, node , action):
-        acc, steer = action
+    def generate_action(self, node , mean_action, target_idx):
+        acc, steer = mean_action
 # simple clipping right now, adding randomization and gridding later
         max_steer = self.model.max_steering_angle(node.v_x)
         actual_acc = np.clip(acc, self.model.a_min, self.model.a_max)
@@ -37,45 +69,22 @@ class treeSearch:
         return (actual_acc, actual_steer)
 
     def search(self, start, target_speed, goal_idx = -1):
-        if (goal_idx<0) or (c>=len(self.traj.points)):
+        if (goal_idx<0) or (goal_idx>=len(self.traj.points)):
             goal_idx = len(self.traj.points) - 1
+        self.goal_idx = goal_idx
 
-        self.add_node(start, True)
+        self.add_node(start)
+        self.visualize_max_speed = target_speed
 
-
-        if not self.traj.is_inside_track((start.x, start.y)):
+        if not start.is_valid(self.traj):
             print("Warning: start point is outside the track.")
             return None
         
-
-        while True:
-            prev_is_frontier = False
-
-            if self.frontier_node is not None:
-                prev_is_frontier = True
-                target_idx = self.frontier_idx
-                expansion_node = self.frontier_node
-            else:
-                break
-            
-            # print(self.frontier_idx)
-            # print(expansion_node)
-            # print()
-
-            new_node = None
-            if not self.model.has_no_valid_children(expansion_node, self.traj):
-                mean_action = self.model.controller(expansion_node, self.traj, target_idx, target_speed)
-                action = self.generate_action(expansion_node, mean_action)
-                new_node = self.model.generate_child(expansion_node, action, self.traj)
-            else:
-                print("Warning: no valid children found.")
-            
-            
-            self.add_node(new_node, prev_is_frontier)
+        expansion_node = start
+        # while True:
+        return self.grow_from_node(expansion_node)
             # print('frontier node', self.frontier_node)
         
-            if new_node is not None:
-                self.visualizer.plot_node(new_node, target_speed)
 
 
 

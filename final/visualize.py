@@ -5,9 +5,28 @@ import numpy as np
 class Visualizer:
     def __init__(self, update_rate=0.1):
         # plt.ion()
-        plt.show()
+        # plt.show()
         plt.axis('equal')
+        # pass
 
+    def plot_waypoints(self, waypoints, max_t = 10):
+        x = []
+        y = []
+        c = []
+        for i in range(len(waypoints)-1,1,-1):
+            speed_ratio = min(abs(waypoints[i].v_x)/max_t,1)
+            # x.append(node.x)
+            # y.append(node.y)
+            # c.append([speed_ratio, 1-speed_ratio, 0])
+        
+            # plt.plot(x,y , '-', color=c)
+            # print(node.x, node.y)
+            # print((waypoints[i-1].x, waypoints[i].x), (waypoints[i-1].y, waypoints[i].y))
+            plt.plot((waypoints[i-1].x, waypoints[i].x), (waypoints[i-1].y, waypoints[i].y) , '-', color=[speed_ratio, 1-speed_ratio, 0])
+            # self.show()
+        
+        # plt.plot(x, y , '-')
+        plt.show()
 
     def plot_trajectory(self, traj):
         # plt.show()
