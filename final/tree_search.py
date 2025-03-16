@@ -1,9 +1,5 @@
 import numpy as np
-from scipy.stats import truncnorm
-
-ESTIM = 0
-LEFT = 1
-RIGHT = 2
+from utils import *
 
 
 class treeSearch:
@@ -75,7 +71,7 @@ class treeSearch:
             
             d_lookahead = self.config['d_lookahead'] 
             idx = original_idx + int(d_lookahead / self.traj.dstep) # + np.random.uniform(0, 0)
-            target, target_idx = self.traj.get_waypoint_bounded(idx)
+            target, target_idx = self.traj.get_waypoint_bounded(idx, policy)
 
             mean_action = self.model.controller(current_node, target, self.traj.estim_max_speed[original_idx])
             action, understeer  = self.generate_action(current_node, mean_action) #, original_idx)
@@ -114,20 +110,12 @@ class treeSearch:
         return (actual_acc, actual_steer), understeer
     
 
-    def get_rollback(self, low, high, mu, sigma):
-        
-        # Convert to standard normal bounds
-        a, b = (low - mu) / sigma, (high - mu) / sigma
-        generated = int(truncnorm.rvs(a, b, loc=mu, scale=sigma, size=1, random_state=self.rng))
-        print(low, high, mu, sigma, generated)
-        # Generate a single sample
-        return generated
 
     def get_expansion_node(self):
         choice_nodes = []
         # print('self.node_grid', self.node_grid)
         while len(choice_nodes) == 0:
-            rollback = self.get_rollback(0,  self.config['prev_horizon'], self.mean_rollback,  self.config['sigma_expansion_idx'])
+            rollback = tuncated_normal(0,  self.config['prev_horizon'], self.mean_rollback,  self.config['sigma_expansion_idx'], self.rng)
             # print('rollback: ', rollback)
             choice_nodes = self.node_grid[rollback]
         speeds = [node.v_x for node in choice_nodes]

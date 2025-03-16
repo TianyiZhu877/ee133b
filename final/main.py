@@ -43,7 +43,7 @@ vis.plot_trajectory(traj)
 search = treeSearch(traj, car_model, vis, tree_search_config)
 # print(traj.tangent)
 start_node = get_starting_point_from_traj(traj, 5)
-result = search.search(start_node, 30)
+result = search.search(start_node, 25)
 # vis.show()
 if result is not None:
     vis.plot_waypoints(result, 25)

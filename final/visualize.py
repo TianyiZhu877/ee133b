@@ -44,7 +44,8 @@ class Visualizer:
         #     # plt.gca().add_patch(circle)
         #     plt.scatter(traj.points[i, 0], traj.points[i, 1], s=traj.widths[i], color='grey')
 
-        plt.plot(traj.points[:, 0], traj.points[:, 1], 'y-') # , label='Original Line')
+        # plt.plot(traj.points[:, 0], traj.points[:, 1], 'y-') # , label='Original Line')
+        plt.plot(traj.estim_path[:, 0], traj.estim_path[:, 1], 'y-') # , label='Original Line')
         # self.show()
 
     

@@ -3,9 +3,10 @@ from scipy.interpolate import interp1d
 from scipy.signal import savgol_filter
 from scipy.ndimage import gaussian_filter
 from scipy.spatial import KDTree
+from utils import *
 
 class Trajectory:
-    def __init__(self, points, widths = 2, width_func = None, dstep=0.1, sigma = 30.0):
+    def __init__(self, points, widths = 2, width_func = None, dstep=0.1, sigma = 30.0, use_center_as_estim = False):
 
         
         # Calculate the cumulative distance along the line
@@ -52,6 +53,12 @@ class Trajectory:
 
         self.right_boundary = self.points + np.hstack((tan_y, -tan_x))*self.widths[:, np.newaxis]
         self.left_boundary = self.points + np.hstack((-tan_y, tan_x))*self.widths[:, np.newaxis]
+
+        self.estim_path = self.points
+        if not use_center_as_estim:
+            estim_path_x = gaussian_filter(self.points[:, 0], sigma=sigma*1.5)
+            estim_path_y = gaussian_filter(self.points[:, 1], sigma=sigma*1.5)
+            self.estim_path = np.column_stack((estim_path_x, estim_path_y))
         # might want to interpolate again here?
 
         self.estim_max_speed = None
@@ -80,10 +87,21 @@ class Trajectory:
 
         return abs(dist) <= self.widths[idx]
 
-    def get_waypoint_bounded(self, idx):
+    def get_field_by_policy(self, policy):
+        if policy == ESTIM:
+            return self.estim_path
+        
+        if policy == LEFT:
+            return self.left_boundary
+        
+        if policy == RIGHT:
+            return self.right_boundary
+
+    def get_waypoint_bounded(self, idx, policy = ESTIM):
         """Returns the waypoint at the given index, bounded by the trajectory length."""
-        idx = max(min(idx, len(self.points) - 1), 0)
-        return self.points[idx], idx
+        points = self.get_field_by_policy(policy)
+        idx = max(min(idx, len(points) - 1), 0)
+        return points[idx], idx
     
 
 def sin_width_func(x, T = 6, min_A = 1.6, max_A = 2):
