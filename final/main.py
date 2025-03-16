@@ -20,10 +20,13 @@ controller_config = {
 
 tree_search_config = {
     'd_lookahead': 1.2,
+    'd_lookahead_sides': 8,
     'prev_horizon': 200,
     'understeer_thres': 0.6,
     'sigma_expansion_idx': 10,
-    'mean_rollback': 10
+    'sigma_expansion_idx_sides': 20,
+    'mean_rollback': 10,
+    'P_toward_boundary': 0.4,
     # 'longi_resolution': 30, 
                            }
 
@@ -36,8 +39,8 @@ car_model = carModel(controller_config = controller_config)
 #     print(v, car_model.max_steering_angle(v)/3.1416*180)
 
 
-traj = get_sharpe_angle_traj()
-# traj = get_sin_traj()
+# traj = get_sharpe_angle_traj()
+traj = get_sin_traj()
 vis = Visualizer()
 vis.plot_trajectory(traj)
 search = treeSearch(traj, car_model, vis, tree_search_config)
@@ -46,5 +49,7 @@ start_node = get_starting_point_from_traj(traj, 5)
 result = search.search(start_node, 25)
 # vis.show()
 if result is not None:
+    plt.cla()
+    vis.plot_trajectory(traj)
     vis.plot_waypoints(result, 25)
 # plt.show()

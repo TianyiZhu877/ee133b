@@ -9,6 +9,8 @@ class Visualizer:
         plt.axis('equal')
         # pass
         self.last_update = time.time()
+        self.interval = 1e3
+        self.countdown = self.interval
 
     def plot_waypoints(self, waypoints, max_t = 10):
         x = []
@@ -63,9 +65,13 @@ class Visualizer:
         plt.plot(x,y , '-', color=[speed_ratio, 1-speed_ratio, 0])
 
         current_time = time.time()
-        if current_time - self.last_update > 1e-2:
+        if current_time - self.last_update > 0.1:
             self.last_update = time.time()
+        # self.countdown -= 1
+        # if self.countdown <= 0:
+        #     self.countdown = self.interval
             self.show()
+        
 
     def show(self):
         plt.pause(1e-3)

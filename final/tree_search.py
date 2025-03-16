@@ -16,14 +16,14 @@ class treeSearch:
         self.frontier_idx = 0
 
         self.visualize_max_speed = 25
-        self.visualize = False
+        self.visualize = True
         self.goal_idx = -1
 
         self.prev_frontier = 0
         self.mean_rollback =  self.config['mean_rollback'] 
 
         # np.random.seed(0)
-        self.rng = np.random.default_rng(0)
+        self.rng = np.random.default_rng(1)
 
     
     def add_node(self, node):
@@ -63,22 +63,27 @@ class treeSearch:
         num_growed = 1
         num_understeer = 1
 
+        max_speed = self.traj.get_max_speed_by_policy(policy)
+
         while not self.model.has_no_valid_children(current_node, self.traj):
             original_idx, dist = current_node.get_idx_dist(self.traj)
 
             if original_idx == self.goal_idx:
                 return current_node.build_waypoints(), None
             
+            
             d_lookahead = self.config['d_lookahead'] 
+            if policy != ESTIM:
+                d_lookahead = self.config['d_lookahead_sides'] 
             idx = original_idx + int(d_lookahead / self.traj.dstep) # + np.random.uniform(0, 0)
             target, target_idx = self.traj.get_waypoint_bounded(idx, policy)
 
-            mean_action = self.model.controller(current_node, target, self.traj.estim_max_speed[original_idx])
+            mean_action = self.model.controller(current_node, target, max_speed[original_idx])
             action, understeer  = self.generate_action(current_node, mean_action) #, original_idx)
             new_node = self.model.generate_child(current_node, action, self.traj)
             self.add_node(new_node)
             current_node = new_node
-            print('growing node', current_node, self.traj.estim_max_speed[target_idx], action, target_idx)
+            print('growing node', current_node, max_speed[target_idx], action, target_idx)
             num_growed += 1
             if understeer:
                 num_understeer += 1 
@@ -89,7 +94,7 @@ class treeSearch:
                     print('Update max speed warning:')
                     break
                 idx, dist = current_node.get_idx_dist(self.traj)
-                self.traj.estim_max_speed[idx] -= max(1.6, abs(self.traj.estim_max_speed[idx]-current_node.v_x)/8)
+                self.traj.set_max_speed_by_policy(policy, idx, max_speed[idx] - max(1.6, abs(max_speed[idx]-current_node.v_x)/8))
                 current_node = current_node.parent
         
         return num_understeer, num_growed
@@ -111,11 +116,17 @@ class treeSearch:
     
 
 
-    def get_expansion_node(self):
+    def get_expansion_node(self, policy):
         choice_nodes = []
         # print('self.node_grid', self.node_grid)
+        timeout = 100
+        mean_rollback, sigma = self.mean_rollback, self.config['sigma_expansion_idx']
+        if policy != ESTIM:
+            mean_rollback, sigma = self.config['mean_rollback'], self.config['sigma_expansion_idx_sides']
+
         while len(choice_nodes) == 0:
-            rollback = tuncated_normal(0,  self.config['prev_horizon'], self.mean_rollback,  self.config['sigma_expansion_idx'], self.rng)
+            print(policy)
+            rollback = tuncated_normal(0,  min(self.config['prev_horizon'], self.frontier_idx), mean_rollback,  sigma, self.rng)
             # print('rollback: ', rollback)
             choice_nodes = self.node_grid[rollback]
         speeds = [node.v_x for node in choice_nodes]
@@ -128,9 +139,9 @@ class treeSearch:
             self.mean_rollback =  self.config['mean_rollback'] 
         d_mean_rollback = np.ceil(max(0, (understeer_rate - self.config['understeer_thres'])*40 ))
         self.mean_rollback += d_mean_rollback
-        if self.mean_rollback >= self.config['prev_horizon']:
+        if self.mean_rollback >= min(self.config['prev_horizon'], self.frontier_idx):
             print('Warning: too many rollback')
-            self.mean_rollback = self.config['prev_horizon']
+            self.mean_rollback = min(self.config['prev_horizon'], self.frontier_idx)
             
 
         self.prev_frontier = self.frontier_idx
@@ -151,15 +162,26 @@ class treeSearch:
             return None
         
         expansion_node = start
+        policy = ESTIM
         while True:
-            ret1, ret2 = self.grow_from_node(expansion_node)
+            ret1, ret2 = self.grow_from_node(expansion_node, policy)
             if isinstance(ret1, list):
                 return ret1
             num_understeer, num_growed = ret1, ret2
-            self.update_mean_rollback(num_understeer/num_growed)
-            expansion_node = self.get_expansion_node()
+            if policy == ESTIM:
+                self.update_mean_rollback(num_understeer/num_growed)
+            expansion_node = self.get_expansion_node(policy)
             print('expansion_node', expansion_node)
             # print('frontier node', self.frontier_node)
+            policy = ESTIM
+            randnum = self.rng.uniform()
+            P = self.config['P_toward_boundary']
+            if randnum < P/2:
+                policy = LEFT
+            if P/2 < randnum < P:
+                policy = RIGHT
+
+            
         
 
 

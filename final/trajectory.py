@@ -56,8 +56,8 @@ class Trajectory:
 
         self.estim_path = self.points
         if not use_center_as_estim:
-            estim_path_x = gaussian_filter(self.points[:, 0], sigma=sigma*1.5)
-            estim_path_y = gaussian_filter(self.points[:, 1], sigma=sigma*1.5)
+            estim_path_x = gaussian_filter(self.points[:, 0], sigma=sigma*1.6)
+            estim_path_y = gaussian_filter(self.points[:, 1], sigma=sigma*1.6)
             self.estim_path = np.column_stack((estim_path_x, estim_path_y))
         # might want to interpolate again here?
 
@@ -102,6 +102,26 @@ class Trajectory:
         points = self.get_field_by_policy(policy)
         idx = max(min(idx, len(points) - 1), 0)
         return points[idx], idx
+    
+    def get_max_speed_by_policy(self, policy):
+        if policy == ESTIM:
+            return self.estim_max_speed
+        
+        if policy == LEFT:
+            return self.left_max_speed
+        
+        if policy == RIGHT:
+            return self.right_max_speed
+        
+    def set_max_speed_by_policy(self, policy, idx, val):
+        if policy == ESTIM:
+            self.estim_max_speed[idx] = val
+        
+        if policy == LEFT:
+            self.left_max_speed[idx] = val
+        
+        if policy == RIGHT:
+            self.right_max_speed[idx] = val
     
 
 def sin_width_func(x, T = 6, min_A = 1.6, max_A = 2):
