@@ -31,13 +31,8 @@ class Visualizer:
     def plot_trajectory(self, traj):
         # plt.show()
 
-        tan_x = traj.tangent[:, :1]
-        tan_y = traj.tangent[:, 1:]
-
-        right_boundary = traj.points + np.hstack((tan_y, -tan_x))*traj.widths[:, np.newaxis]
-        left_boundary = traj.points + np.hstack((-tan_y, tan_x))*traj.widths[:, np.newaxis]
-        plt.plot(right_boundary[:, 0], right_boundary[:, 1], '-', color='grey')
-        plt.plot(left_boundary[:, 0], left_boundary[:, 1], '-', color='grey')
+        plt.plot(traj.right_boundary[:, 0], traj.right_boundary[:, 1], '-', color='grey')
+        plt.plot(traj.left_boundary[:, 0], traj.left_boundary[:, 1], '-', color='grey')
         # Plot the smoothed line
         # plt.plot(smoothed_line[:, 0], smoothed_line[:, 1], 'r-', label='Smoothed Line', linewidth=2)
         # print(traj.widths)

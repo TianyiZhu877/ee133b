@@ -13,15 +13,15 @@ def get_starting_point_from_traj(traj, start_speed = 10):
     return Node(x, y, theta, start_speed,0, 0, 0)
 
 controller_config = {
-    'P_acc' : 1.8
+    'P_acc' : 10
 }
 
 
 
 tree_search_config = {
-    'grow_point_search_horizon': 10, 
     'd_lookahead': 1.2,
-    'max_target_horigon': 10,
+    'prev_horizon': 200,
+    'longi_resolution': 30, 
                            }
 
 
@@ -40,7 +40,7 @@ vis.plot_trajectory(traj)
 search = treeSearch(traj, car_model, vis, tree_search_config)
 # print(traj.tangent)
 start_node = get_starting_point_from_traj(traj, 5)
-result = search.search(start_node, 10)
+result = search.search(start_node, 17)
 if result is not None:
-    vis.plot_waypoints(result, 10)
+    vis.plot_waypoints(result, 15)
 # plt.show()

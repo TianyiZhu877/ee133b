@@ -31,6 +31,7 @@ class Node:
     def get_idx_dist(self, traj):
         if self.nearest_idx is None:
             self.nearest_idx, self.nearest_dist = traj.nearest_point(self.position())
+            self.nearest_idx = int(self.nearest_idx)
         return self.nearest_idx, self.nearest_dist
 
     def is_valid(self, traj):

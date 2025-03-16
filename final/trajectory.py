@@ -5,7 +5,7 @@ from scipy.ndimage import gaussian_filter
 from scipy.spatial import KDTree
 
 class Trajectory:
-    def __init__(self, points, widths = 2, width_func = None, dstep=0.05, sigma = 30.0):
+    def __init__(self, points, widths = 2, width_func = None, dstep=0.1, sigma = 30.0):
 
         
         # Calculate the cumulative distance along the line
@@ -47,13 +47,30 @@ class Trajectory:
         self.tangent = np.vstack((self.tangent, self.tangent[-1]))  # Repeat the last point
         self.tangent = self.tangent / np.linalg.norm(self.tangent, axis=1, keepdims=True)
 
+        tan_x = self.tangent[:, :1]
+        tan_y = self.tangent[:, 1:]
+
+        self.right_boundary = self.points + np.hstack((tan_y, -tan_x))*self.widths[:, np.newaxis]
+        self.left_boundary = self.points + np.hstack((-tan_y, tan_x))*self.widths[:, np.newaxis]
         # might want to interpolate again here?
+
+        self.estim_max_speed = None
+        self.left_max_speed = None
+        self.right_max_speed = None
+
+        self.max_width = np.max(self.widths)
+
 
     def nearest_point(self, point):
         dist, idx = self.tree.query(point)
         return idx, dist
     
-    
+    def set_constant_max_speed(self, speed):
+        
+        self.estim_max_speed = np.ones(self.points.shape[0]) * speed
+        self.left_max_speed = np.ones(self.points.shape[0]) * speed
+        self.right_max_speed = np.ones(self.points.shape[0]) * speed
+
     def is_inside_track(self, point):
         """Checks if the car is within track bounds."""
         # Find the closest track center point

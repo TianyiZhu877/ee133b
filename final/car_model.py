@@ -50,7 +50,7 @@ class carModel:
         # dynamic_max_steer = np.arctan(slip_limit / (1 + (self.a + self.b) / self.L * v_x))
         # print('slip_limit dynamic_max_steer', slip_limit, dynamic_max_steer)
         dynamic_max_steer = np.arctan(self.slip_coeff*10/v)
-        return min(dynamic_max_steer, self.steer_limit)
+        return min(dynamic_max_steer, self.steer_limit), dynamic_max_steer
 
 
     def generate_child(self, node, action, traj):
@@ -71,7 +71,7 @@ class carModel:
             # print('acceleration', acceleration)
             return None
         
-        max_steer = min(self.max_steering_angle(node.v_x), self.steer_limit)
+        max_steer = min(self.max_steering_angle(node.v_x)[0], self.steer_limit)
         if abs(steering_angle) > max_steer*1.01:
             # print('steering_angle', steering_angle, max_steer)
             return None  # Reject if steering causes slip
@@ -106,7 +106,7 @@ class carModel:
         test_inputs = [
             (0, 0),  # No input
             (1, 0), (-1, 0),  # Acceleration
-            (0, self.max_steering_angle(node.v_x)), (0, -self.max_steering_angle(node.v_x))  # Max steering
+            (0, self.max_steering_angle(node.v_x)[0]), (0, -self.max_steering_angle(node.v_x)[0])  # Max steering
         ]
         for acc, steer in test_inputs:
             if self.generate_child(node, (acc, steer), traj) is not None:
