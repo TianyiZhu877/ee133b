@@ -36,7 +36,7 @@ class Trajectory:
         smoothed_x = gaussian_filter(interpolated_points[:, 0], sigma=sigma)
         smoothed_y = gaussian_filter(interpolated_points[:, 1], sigma=sigma)
         self.points = np.column_stack((smoothed_x, smoothed_y))
-        print(new_distances)
+        # print(new_distances)
         self.distances = new_distances
         self.tree = KDTree(self.points)
 
@@ -44,6 +44,8 @@ class Trajectory:
             self.widths = width_func(self.distances)
 
         self.tangent = self.points[1:] - self.points[:-1]
+        self.tangent = np.vstack((self.tangent, self.tangent[-1]))  # Repeat the last point
+        self.tangent = self.tangent / np.linalg.norm(self.tangent, axis=1, keepdims=True)
 
         # might want to interpolate again here?
 

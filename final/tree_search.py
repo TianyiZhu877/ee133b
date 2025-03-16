@@ -33,7 +33,7 @@ class treeSearch:
         max_steer = self.model.max_steering_angle(node.v_x)
         actual_acc = np.clip(acc, self.model.a_min, self.model.a_max)
         actual_steer = np.clip(steer, -max_steer, max_steer)
-        print('target steer, max_steer', steer, max_steer)
+        # print('target steer, max_steer', steer, max_steer)
         return (actual_acc, actual_steer)
 
     def search(self, start, target_speed, goal_idx = -1):
@@ -58,9 +58,9 @@ class treeSearch:
             else:
                 break
             
-            print(self.frontier_idx)
-            print(expansion_node)
-            print()
+            # print(self.frontier_idx)
+            # print(expansion_node)
+            # print()
 
             new_node = None
             if not self.model.has_no_valid_children(expansion_node, self.traj):
@@ -72,10 +72,10 @@ class treeSearch:
             
             
             self.add_node(new_node, prev_is_frontier)
-            print('frontier node', self.frontier_node)
+            # print('frontier node', self.frontier_node)
         
             if new_node is not None:
-                self.visualizer.plot_node(new_node)
+                self.visualizer.plot_node(new_node, target_speed)
 
 
 

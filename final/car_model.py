@@ -93,7 +93,7 @@ class carModel:
         # Create new node
         new_node = Node(new_x, new_y, new_theta, new_v_x, new_v_y, new_omega, new_t, node, (acceleration, steering_angle))
                         # self.track_center, self.track_width, self.mu, self.C_alpha, self.F_z, self.L, self.a, self.b)
-        print('new_node', new_node)
+        # print('new_node', new_node)
         # Reject if the new node is outside the track
         if not traj.is_inside_track((new_node.x, new_node.y)):
             return None
@@ -115,8 +115,9 @@ class carModel:
     
     def controller(self, node, traj, idx, target_speed):
         d_lookahead = self.controller_config['d_lookahead'] 
-        dxy = traj.get_waypoint_bounded(idx + int(d_lookahead / traj.dstep)) - node.position()
-        print('d_lookahead', d_lookahead)
+        target = traj.get_waypoint_bounded(idx + int(d_lookahead / traj.dstep))
+        dxy = target - node.position()
+        # print('d_lookahead', d_lookahead)
 
         # Transform lookahead point into car's local coordinate system
         local_x = dxy[0] * np.cos(-node.theta) - dxy[1] * np.sin(-node.theta)
@@ -124,6 +125,7 @@ class carModel:
 
         if local_x < 0:  
             print('Controller warning: Lookahead point should always be in front')
+            print('target, node', target, node.position())
 
         # Compute curvature
         kappa = 2 * local_y / (local_x**2 + local_y**2)
@@ -134,7 +136,7 @@ class carModel:
         # Compute acceleration
         v_error = target_speed - node.v_x
         acc = self.controller_config['P_acc'] * v_error
-        print('acc', acc, target_speed, node.v_x)
+        # print('acc', acc, target_speed, node.v_x)
 
         return acc, steer
     
