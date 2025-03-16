@@ -8,6 +8,7 @@ class Visualizer:
         # plt.show()
         plt.axis('equal')
         # pass
+        self.last_update = time.time()
 
     def plot_waypoints(self, waypoints, max_t = 10):
         x = []
@@ -22,7 +23,7 @@ class Visualizer:
             # plt.plot(x,y , '-', color=c)
             # print(node.x, node.y)
             # print((waypoints[i-1].x, waypoints[i].x), (waypoints[i-1].y, waypoints[i].y))
-            plt.plot((waypoints[i-1].x, waypoints[i].x), (waypoints[i-1].y, waypoints[i].y) , '-', color=[speed_ratio, 1-speed_ratio, 0])
+            plt.plot((waypoints[i-1].x, waypoints[i].x), (waypoints[i-1].y, waypoints[i].y) , '-', color=[1-speed_ratio, 1-speed_ratio, speed_ratio])
             # self.show()
         
         # plt.plot(x, y , '-')
@@ -60,7 +61,10 @@ class Visualizer:
         speed_ratio = min(abs(node.v_x)/max_t,1)
         plt.plot(x,y , '-', color=[speed_ratio, 1-speed_ratio, 0])
 
-        self.show()
+        current_time = time.time()
+        if current_time - self.last_update > 1e-2:
+            self.last_update = time.time()
+            self.show()
 
     def show(self):
         plt.pause(1e-3)
