@@ -16,7 +16,7 @@ class treeSearch:
         self.frontier_idx = 0
 
         self.visualize_max_speed = 25
-        self.visualize = True
+        self.visualize = False
         self.goal_idx = -1
 
         self.prev_frontier = 0

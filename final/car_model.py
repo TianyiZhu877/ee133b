@@ -2,7 +2,7 @@ import numpy as np
 from node import Node
 
 class carModel:
-    def __init__(self, steer_limit = np.pi/3, dt=0.01, mu=1.2, C_alpha=40000, F_z=5000, 
+    def __init__(self, steer_limit = np.pi/5, dt=0.01, mu=1.2, C_alpha=40000, F_z=5000, 
                  L=2.5, L_f = 1.2, grip_loss_k = 2.5, a_min=-12, a_max=10,
                  controller_config = None):
         """
@@ -49,11 +49,11 @@ class carModel:
         # slip_limit = self.mu * self.F_z / self.C_alpha
         # dynamic_max_steer = np.arctan(slip_limit / (1 + (self.a + self.b) / self.L * v_x))
         # print('slip_limit dynamic_max_steer', slip_limit, dynamic_max_steer)
-        dynamic_max_steer = np.arctan(self.slip_coeff*10/v)
+        dynamic_max_steer = np.arctan(self.slip_coeff*6/v)
         return min(dynamic_max_steer, self.steer_limit), dynamic_max_steer
 
 
-    def generate_child(self, node, action, traj):
+    def generate_child(self, node, action, traj, bypass = False):
         """
         Propagates the state using the bicycle model and checks validity.
         
@@ -67,14 +67,15 @@ class carModel:
 
         acceleration, steering_angle = action
         # Ensure steering angle and acceleration is within the allowed limit
-        if (acceleration > self.a_max*1.01) or (acceleration < self.a_min*1.01):
-            # print('acceleration', acceleration)
-            return None
-        
-        max_steer = min(self.max_steering_angle(node.v_x)[0], self.steer_limit)
-        if abs(steering_angle) > max_steer*1.01:
-            # print('steering_angle', steering_angle, max_steer)
-            return None  # Reject if steering causes slip
+        if not bypass:
+            if (acceleration > self.a_max*1.01) or (acceleration < self.a_min*1.01):
+                # print('acceleration', acceleration)
+                return None
+            
+            max_steer = min(self.max_steering_angle(node.v_x)[0], self.steer_limit)
+            if abs(steering_angle) > max_steer*1.01:
+                # print('steering_angle', steering_angle, max_steer)
+                return None  # Reject if steering causes slip
         
         # Update state using bicycle model equations
         new_v_x = node.v_x + acceleration * self.dt
@@ -95,7 +96,7 @@ class carModel:
                         # self.track_center, self.track_width, self.mu, self.C_alpha, self.F_z, self.L, self.a, self.b)
         # print('new_node', new_node)
         # Reject if the new node is outside the track
-        if not node.is_valid(traj):
+        if (not node.is_valid(traj)) and (not bypass):
             return None
 
         return new_node
